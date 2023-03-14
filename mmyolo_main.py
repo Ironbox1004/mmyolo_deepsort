@@ -60,16 +60,19 @@ if __name__ == '__main__':
     draw_text_postion = (int(960 * 0.01), int(540 * 0.05))
 
     # 初始化 mmyolo
-    config_file = None
-    checkpoint_file = None
+    config_file = "/home/chenzhen/code/detection/openmmlab/mmyolo/checkpoint/yolox-dfl-1.0.py"
+    checkpoint_file = "/home/chenzhen/code/detection/openmmlab/mmyolo/checkpoint/yolox-dfl-1.0.pth"
+    save_classes = ["Car", "Bus", "Truck"]
     device = 'cuda:0' if torch.cuda.is_available() else 'cpu'
     save_scores = 0.7
     model = init_detector(config_file, checkpoint_file, device=device)
     dataset_classes = model.dataset_meta.get('classes')
+    class_to_idx = {cls: idx for idx, cls in enumerate(dataset_classes)}
+    idx_list = [class_to_idx[cls] for cls in save_classes]
 
     # 打开视频
     capture = cv2.VideoCapture(
-        None
+        "/home/chenzhen/code/detection/datasets/test_data/video/2022-12-10-15-42-05_sensor_smgs_camera.mp4"
     )
 
 
@@ -86,6 +89,8 @@ if __name__ == '__main__':
         result = inference_detector(model, im)
         pred_instances = result.pred_instances[
             result.pred_instances.scores > save_scores]
+        save_label_mask = torch.isin(pred_instances.labels.cpu(), torch.tensor(idx_list))
+        pred_instances = pred_instances[save_label_mask]
         # pred_instances = pred_instances[pred_instances.labels == 0] #定义检测类别 目前是car 根据需求更改
 
         # 如果画面中 有bbox
